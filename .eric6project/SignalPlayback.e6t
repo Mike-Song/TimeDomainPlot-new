@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Tasks SYSTEM "Tasks-6.0.dtd">
+<!-- eric6 tasks file for project SignalPlayback -->
+<!-- Saved: 2018-09-11, 21:56:58 -->
+<Tasks version="6.0">
+  <ProjectScanFilter></ProjectScanFilter>
+  <Task priority="1" completed="False" type="1" uid="{0db8d5cc-4e29-4765-9c65-799cd77027de}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>919</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{09fd68aa-b39c-4d3f-93b6-895c36bc553c}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>927</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{8f4c3902-0ed9-4781-a317-564df9a4c8ec}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>942</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{2c0b752b-a2e6-4ff2-8226-fd87829a3692}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>1081</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{ad0d9ad3-ad5f-4ab4-b476-4d14fe0b8a95}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>1099</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{56456c04-9b4a-4459-8119-82ced5236c59}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>1116</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{78b3adb5-4abd-4659-b6a7-865d96bc4e07}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>1154</Linenumber>
+    </Resource>
+  </Task>
+  <Task priority="1" completed="False" type="1" uid="{ec7efaae-573d-4b90-a38e-9f56a1b134de}">
+    <Summary>TODO: not implemented yet</Summary>
+    <Description></Description>
+    <Created>2018-09-11, 21:56:55</Created>
+    <Resource>
+      <Filename>SignalPlayback.py</Filename>
+      <Linenumber>1165</Linenumber>
+    </Resource>
+  </Task>
+</Tasks>
