@@ -49,16 +49,16 @@ class RealTimeThread(threading.Thread):
         super(RealTimeThread, self).__init__()  
         self.axes = axes
         self.canvas = canvas
-        self.CHA = cha
+        self.CHA = mainWindow.radioButton_CHA.isChecked()
         self.timeout = timeout 
         self.data = []
+        self.data_ChA = []
+        self.data_ChB = []
         self.stopped = False
         self.sampleRate = mainWindow.getSampleRate()
-        self.recordLen = mainWindow.getRecordLength()
+        self.recordLength = mainWindow.getRecordLength()
         self.volScale = mainWindow.getVoltageScale()
-        self.offset = mainWindow.getOffset()
-        self.data_ChA = []
-        self.data_ChB = []        
+        self.offset = mainWindow.getOffset()     
 
     def run(self):  
         def bumatoyuanmaSingle(x):
@@ -66,103 +66,112 @@ class RealTimeThread(threading.Thread):
              x = x - 65536 
           return x
    
-        def parseData(data, withHead):
-            datalist = []
+        def parseData(data, length,  withHead):
             newdata = data
             if (withHead):
                newdata = data[16:]
-
-            # Save the original payload
-            now = datetime.datetime.now()
-            currentTime = now.strftime('%Y-%m-%d-%H-%M-%S') 
-            rawFileName = "RawIQ-" + currentTime + ".dat"
-            rawFile=open(rawFileName,'wb')
-            rawFile.write(newdata)
-            rawFile.close()
-
-            self.data_ChA  = []
-            self.data_ChB = []
-            
-            for pos in range(0, 31*1024, 32):
+            else:
+                newdata = data
+                
+            for pos in range(0, length*1024, 32):
                 line = newdata[pos:pos+32]
                 newline = ''
                 # One line data
                 for i in range(0, 32, 2):
                    newline =  newline + ("%04x" % int(struct.unpack('H',line[i:i+2])[0]))
+                   print (newline)
 
                 # Get CHA/CHB VALUE BY ABAB...
+                print (newline)
                 for i in range(0,  64,  8):
                     dataA1= newline[i:i+2]
                     dataA2= newline[i+2:i+4]
                     dataA = dataA2 + dataA1
                     dataA = int (dataA,  16)
-                    self.data_ChA .append(bumatoyuanmaSingle(dataA))
+                    self.data_ChA.append(bumatoyuanmaSingle(dataA))
                     dataB1 = newline[i+4:i+6]
                     dataB2 = newline[i+6:i+8]
                     dataB = dataB2  + dataB1
                     dataB = int (dataB,  16)
-                    self.data_ChB .append(bumatoyuanmaSingle(dataB))
+                    self.data_ChB.append(bumatoyuanmaSingle(dataB))
+
+            print ("Channel A: Lenth:", len(self.data_ChA), self.data_ChA)
+            print ("Channel B: Lenth:", len(self.data_ChB), self.data_ChB)
             
-            # Write into file
-            now = datetime.datetime.now()
-            currentTime = now.strftime('%Y-%m-%d-%H-%M-%S') 
-            FileName_CHA = "ChA-" + currentTime + ".dat"
-            File_CHA=open(FileName_CHA,'wb')
-            FileName_CHB = "ChB-" + currentTime + ".dat"
-            File_CHB=open(FileName_CHB,'wb')
-            for pos in range(0, len(self.data_ChA)):
-                File_CHA.write(self.data_ChA[pos])
-                File_CHB.write(self.data_ChB[pos])
-                
-            File_CHA.close()
-            File_CHB.close()
-            
-            if (self.CHA):
-                return self.data_ChA
-            else:
-                return self.data_ChB 
-        
-        def realtimecapture():
-          print ("Real Time Capture.......")
-          while not self.stopped:
-            mainWindow.sendCmdWRREG(0x2,  0x28)
-            mainWindow.udpSocketClient.receiveData()
-            mainWindow.sendCmdWRREG(0x2,  0x29)
-            mainWindow.udpSocketClient.receiveData()
+            return [self.data_ChA, self.data_ChB ]
+
+#            if (mainWindow.radioButton_CHA.isChecked()):
+#                return self.data_ChA
+#            else:
+#                return self.data_ChB 
+
+        def receiveData():
+            mainWindow.sendCmdWRREG(0x2, 0x28)
+            mainWindow.sendCmdWRREG(0x2, 0x29)
             time.sleep(1)
-            mainWindow.sendCmdWRREG(0x2,  0x2a)
-            mainWindow.udpSocketClient.receiveData()
-            mainWindow.sendCmdRAW_AD_SAMPLE()
-            mainWindow.receiveCmdRAW_AD_SAMPLE()
-            #mainWindow.udpSocketClient.receiveData()
-            # Parse Data...
-            data = mainWindow.udpSocketClient.mData
-            
-            #print  ("Receive Total Length: ", len(data))
-            if data:
-                self.data = parseData(data, True)
-                on_draw(self.axes, self.canvas, self.data)
+            mainWindow.sendCmdWRREG(0x2, 0x2b)
+            mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
+            mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
+            return mainWindow.udpSocketClient.mData
+                    
+        def realtimecapture():
+            print ("Real Time Capture.......")
+            receiveTimes = self.recordLength / 8
 
+            while not self.stopped:
+                if receiveTimes <= 1:
+                    data = receiveData()
+                    print ("Receive Total Length:",  len(data))
+                    if data:
+                        data = parseData(data, self.recordLength * 4 ,  True )
+                        self.data_ChA = data[0]
+                        self.data_ChB = data[1]
+                else:
+                    self.data_ChA = []
+                    self.data_ChB = []
+                    for loop in range(0, receiveTimes):
+                        data = receiveData()
+                        if data:
+                            data = parseData(data, 32,  True )
+                            self.data_ChA = self.data_ChA + data[0]
+                            self.data_ChB = self.data_ChB + data[1]
+                        
+                if (mainWindow.radioButton_CHA.isChecked()): 
+                    on_draw(self.axes, self.canvas, self.data_ChA)
+                else: 
+                    on_draw(self.axes, self.canvas, self.data_ChB)
+
+            if self.stopped:
+                mainWindow.lastChAData = self.data_ChA 
+                mainWindow.lastChBData = self.data_ChB
+                
         def on_draw( axes, canvas, data):
-            #x = np.linspace(-self.sampleRate/2, self.sampleRate/2, len(data))  
-            x = np.linspace(-self.sampleRate/2, self.sampleRate/2, 500)  
-            #x = np.linspace(-self.sampleRate/2, self.sampleRate/2, 1024) 
-            # clear the axes and redraw the plot anew
-            axes.clear() 
-            axes.set_title('Signal')
-            axes.set_xlabel('Freqs(Hz)')
-            axes.set_ylabel('dBm')
+                self.sampleRate = mainWindow.getSampleRate()
+                #self.recordLength = mainWindow.getRecordLength()
+                self.volScale = mainWindow.getVoltageScale()
+                self.offset = mainWindow.getOffset()
+                
+                x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, self.recordLength*1024)  
+                #x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, 500)  
+                #x = np.linspace(-self.sampleRate/2, self.sampleRate/2, 1024) 
+                # clear the axes and redraw the plot anew
+                axes.clear() 
+                axes.set_title('Signal')
+                axes.set_xlabel('Freqs(Hz)')
+                axes.set_ylabel('dBm')
 
-            normalLimY = self.volScale * 100;
-            axes.set_ylim(-normalLimY/2 + self.offset, normalLimY/2 + self.offset )
-            ymajorLocator = MultipleLocator(200) 
-            yminorLocator = MultipleLocator(100) 
-#            axes.yaxis.set_major_locator(ymajorLocator)
-#            axes.yaxis.set_minor_locator(yminorLocator)
-            
-            axes.grid(True)
-            axes.plot(x, data[:500])
-            canvas.draw()
+                normalLimY = self.volScale * 10;
+                axes.set_ylim(-normalLimY/2 + self.offset, normalLimY/2 + self.offset )
+                ymajorLocator = MultipleLocator(self.volScale) 
+                yminorLocator = MultipleLocator(self.volScale/2) 
+                axes.yaxis.set_major_locator(ymajorLocator)
+                axes.yaxis.set_minor_locator(yminorLocator)
+                
+                axes.grid(True)
+                #axes.plot(x, data[:500])
+                print (data)
+                axes.plot(x, data)
+                canvas.draw()
 
         now = datetime.datetime.now()
         startTime = now.strftime('%Y-%m-%d-%H-%M-%S')
@@ -184,7 +193,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.dpi = 100
         self.signalframe = self.widget_Signal_TimeDomain
-        self.figure = Figure((8, 5.5), dpi=self.dpi)
+        self.figure = Figure((10.5, 5.5), dpi=self.dpi)
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setParent(self.signalframe)
         self.axes = self.figure.add_subplot(111)
@@ -193,20 +202,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.axes.set_ylabel('dBm')
         plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8, hspace=0.2, wspace=0.3)
         self.figure.tight_layout()# Adjust spaces
-
+        self.NavToolbar = NavigationToolbar(self.canvas, self.signalframe)
+        #self.addToolBar(QtCore.Qt.RightToolBarArea, NavigationToolbar(self.canvas, self.signalframe))
+        
         # Init Socket
         self.udpSocketClient = UDPSocketClient()
         
         # Init Length
-        self.sendCmdRecordLength()
+        self.sendCmdRecordLength(1)
         
         self.sendCmdWRREG(0x2,  0x20)
-        self.udpSocketClient.receiveData()
         self.sendCmdWRREG(0x2,  0x28)
-        self.udpSocketClient.receiveData()
         
-        #self.NavToolbar = NavigationToolbar(self.canvas, self.signalframe)
-        self.addToolBar(QtCore.Qt.RightToolBarArea, NavigationToolbar(self.canvas, self.signalframe))
+        # Read sampleRate
+        value = self.readCmdSampleRate()
+        self.comboBox_SampleRate.setCurrentIndex(value)
+        
+        # The last data
+        self.lastChAData = []
+        self.lastCHBData = []
 
     def sendcommand(self, cmdid, status, msgid, len, type, offset, apiversion, pad, CRC16,  cmdData):
           cmdid=struct.pack('H',htons(cmdid))
@@ -227,93 +241,95 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
           
           self.udpSocketClient.sendData()
        
-    def sendCmdTriggerType(self): 
-        type = mainWindow.getTiggerType()
-        type = type << 2
+    def sendCmdTriggerType(self,  value): 
+        type = mainWindow.getTriggerType()
+        value = value << 2
         regAddr= 0x2 # 0x2, Bit[2], 0: Auot, 1: External
         regValue=type
-        self.sendCmdWRREG(regAddr,  regValue)
-        
+        currentValue = readCmdTriggerType()
+        currentValue = currentValue | value
+        self.sendCmdWRREG(regAddr,  currentValue)
+
     def receiveCmdTriggerType(self): 
         global gSocketBodySize
         gSocketBodySize = 8
         self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
         mainWindow.udpSocketClient.receiveData() # Do nothing
     
-    def sendCmdSampleRate(self): 
-        sampleRate = mainWindow.getSampleRate()
-        type = type << 2
-        regAddr= 0x2 # 0x2, Bit[2], 0: Auot, 1: External
-        regValue=type
-        self.sendCmdWRREG(regAddr,  regValue)
-        
-    def receiveCmdSampleRate(self): 
+    def readCmdTriggerType(self): 
+#        global gSocketBodySize
+#        gSocketBodySize = 8
+#        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
+        #cmdData  =  struct.pack('L', address) + struct.pack('L', 0x00)
+        self.sendCmdRDREG(0x02,  0x00)
+        data = mainWindow.udpSocketClient.receiveData()
+        data = data[16:]
+        value = int(struct.unpack('L',data[20:])[0])
+        return value
+    
+    def sendCmdSampleRate(self, value): 
         global gSocketBodySize
-        gSocketBodySize = 8
+        gSocketBodySize = 4
         self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
+        cmdData  =  struct.pack('L', htonl(value)) 
+        self.sendcommand(0x5a09,0x0000,0x5a09,0x0004,0x0000,0x0000,0x00,0x00,0x0000, cmdData)
         mainWindow.udpSocketClient.receiveData() # Do nothing
+        
+    def readCmdSampleRate(self): 
+        global gSocketBodySize
+        gSocketBodySize = 4
+        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
+        # Len is not cared
+        self.sendcommand(0x5a0a,0x0000,0x5a0a,0x0004,0x0000,0x0000,0x00,0x00,0x0000, None )
+        data = self.udpSocketClient.receiveData()
+#        newline = ''
+#        for i in range(0, 40, 2):
+#            newline =  newline + ("%04x" % int(struct.unpack('H',data[i:i+2])[0]))
+        value = int(struct.unpack('L',data[16:20])[0])
+        #value = int(struct.unpack('L',data)[0])
+        return value
+        
+    def sendCmdRecordLength(self,  length): 
+        #recordLength = self.getRecordLength()
+        regAddr= 0x8
+        regValue= length
+        self.sendCmdWRREG(regAddr,  regValue)
 
-    def sendCmdRecordLength(self): 
-#        recordLen = self.getRecordLength()
-#        if (recordLen <= 2**16):
-#            regAddr= 0x4 # 0x4, Bit[15:0], 0: Auot, 1: External
-#            regValue=recordLen * 1024
-#            self.sendCmdWRREG(regAddr,  regValue)
-#        else:
-#            regAddr= 0x4 # 0x4, Bit[15:0], 0: Auot, 1: External
-#            regValue=recordLen
-#            self.sendCmdWRREG(regAddr,  regValue)
-#            regAddr= 0x6 # 0x4, Bit[3:0], High 4 bit
-#            regValue=recordLen
-#            self.sendCmdWRREG(regAddr,  regValue)
-        
-            regAddr= 0x4 # 0x4, Bit[15:0], 0: Auot, 1: External
-            regValue=1024
-            self.sendCmdWRREG(regAddr,  regValue)
-            
-            self.receiveCmdRecordLength()
-            
-            regAddr= 0x8 # 0x4, Bit[3:0], High 4 bit
-            regValue=1024
-            self.sendCmdWRREG(regAddr,  regValue)
-            self.receiveCmdRecordLength()
-            
-        
     def receiveCmdRecordLength(self): 
         global gSocketBodySize
         gSocketBodySize = 8
         self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
         self.udpSocketClient.receiveData() # Do nothing
    
-    def sendCmdRAW_AD_SAMPLE(self):
+    def sendCmdRAW_AD_SAMPLE(self,  length):
         #print (sys._getframe().f_code.co_name)        
         global gSocketBodySize
-        gSocketBodySize = 32*1024 #self.getRecordLength()
+        gSocketBodySize = length*1024
         self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
         len = 0 #self.getRecordLength()
         self.sendcommand(0x5a04,0x0000,0x5a04,len,0x0000,0x0000,0x00,0x00,0x0000, None)
           
-    def receiveCmdRAW_AD_SAMPLE(self):
-#        global gSocketBodySize
-#        gSocketBodySize = self.getRecordLength()
-#        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
+    def receiveCmdRAW_AD_SAMPLE(self,  length):
+        global gSocketBodySize
+        gSocketBodySize =  length*1024
+        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
         mainWindow.udpSocketClient.receiveData()
-        
     
     def sendCmdWRREG(self,  regAddress,  regValue):
         #print (sys._getframe().f_code.co_name)
         global gSocketBodySize
         gSocketBodySize = 8
         self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
-        cmdData  =  struct.pack('L', regAddress) +  struct.pack('L', regValue)
+        cmdData  =  struct.pack('L', htonl(regAddress)) +  struct.pack('L', htonl(regValue))
         self.sendcommand(0x5a02,0x0000,0x5a02,0x0008,0x0000,0x0000,0x00,0x00,0x0000, cmdData)
+        self.udpSocketClient.receiveData() # Do nothing
         
     def sendCmdRDREG(self,  regAddress,  regValue):
         #print (sys._getframe().f_code.co_name)
         global gSocketBodySize
         gSocketBodySize = 8
         self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
-        cmdData  =  struct.pack('L', regAddress) +  struct.pack('L', regValue)
+        cmdData  =  struct.pack('L', htonl(regAddress)) +  struct.pack('L', htonl(regValue))
         self.sendcommand(0x5a01,0x0000,0x5a01,0x0008,0x0000,0x0000,0x00,0x00,0x0000, cmdData)
     
     def getTriggerType(self):
@@ -321,24 +337,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return int(index)
         
     def getSampleRate(self):
-        sampleRate= 500*1e6
-        sampleRateStr = mainWindow.lineEdit_SampleRate.text();
-        if (('-' )  == sampleRateStr or "" == sampleRateStr):
-            sampleRate = 500*1e6
-        else:
-            sampleRate = int(sampleRateStr)*1e6 
-                
-        return sampleRate
+        index = mainWindow.comboBox_SampleRate.currentText()
+        return int(index)
         
-    
     def getRecordLength(self):
-        len = 4
-        lenStr = self.lineEdit_RecordLength.text()
-        if (('-' )  == lenStr or "" == lenStr):
-            len = 4
-        else:
-            len = int(lenStr)
-        return len
+        index = self.comboBox_RecordLength.currentIndex()
+        return 2**index
         
     def getVoltageScale(self):
         volScale = 200
@@ -360,7 +364,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             offset = int(offsetStr) 
                 
         return offset
-        
     
     @pyqtSlot()
     def on_pushButton_Stop_TimeDomain_clicked(self):
@@ -377,9 +380,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Slot documentation goes here.
         """
-        
-        
-        
         self.pushButton_Start_TimeDomain.setEnabled(False)
         self.pushButton_Stop_TimeDomain.setEnabled(True)
         self.pushButton_Save_TimeDomain.setEnabled(False)
@@ -392,7 +392,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Slot documentation goes here.
         """
-        # TODO: not implemented yet
+        # Write into file
+        now = datetime.datetime.now()
+        currentTime = now.strftime('%Y-%m-%d-%H-%M-%S') 
+        FileName_CHA = "ChA-" + currentTime + ".txt"
+        File_CHA=open(FileName_CHA,'w')
+        FileName_CHB = "ChB-" + currentTime + ".txt"
+        File_CHB=open(FileName_CHB,'w')
+        for pos in range(0, len(self.lastChAData)):
+            File_CHA.write(str(self.lastChAData[pos]))
+            File_CHA.write('\n')
+            File_CHB.write(str(self.lastChBData[pos]))
+            File_CHB.write('\n')
+            
+        File_CHA.close()
+        File_CHB.close()
+        
+        self.lastChAData = []
+        self.lastChBData = []
         
     @pyqtSlot(int)
     def on_comboBox_TriggerDomain_currentIndexChanged(self, index):
@@ -402,13 +419,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         @param index DESCRIPTION
         @type int
         """
+        # Read Current Address 0x02 value and set the bit 2 Value as changed
+        #mainWindow.sendCmdREW
+        
+    @pyqtSlot(int)
+    def on_comboBox_SampleRate_currentIndexChanged(self, index):
+        """
+        Slot documentation goes here.
+        
+        @param index DESCRIPTION
+        @type int
+        """
+        self.sendCmdSampleRate(index)
+        
+    @pyqtSlot(int)
+    def on_comboBox_RecordLength_currentIndexChanged(self, index):
+        """
+        Slot documentation goes here.
+        
+        @param index DESCRIPTION
+        @type int
+        """
         # TODO: not implemented yet
-        
-        
+        self.sendCmdRecordLength(2**index)
+  
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
     sys.exit(app.exec_())
-    
-

@@ -1,25 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-6.0.dtd">
 <!-- eric6 tasks file for project TimeDomainPlot -->
-<!-- Saved: 2018-09-28, 20:14:02 -->
+<!-- Saved: 2018-10-20, 20:25:22 -->
 <Tasks version="6.0">
   <ProjectScanFilter></ProjectScanFilter>
-  <Task priority="1" completed="False" type="1" uid="{b7193363-5c6c-46cb-8ce5-5aa594a12f6c}">
+  <Task priority="1" completed="False" type="1" uid="{85d882fd-f343-4970-993e-56868f1c9492}">
     <Summary>TODO: not implemented yet</Summary>
     <Description></Description>
-    <Created>2018-09-28, 20:13:59</Created>
+    <Created>2018-10-20, 19:33:41</Created>
     <Resource>
       <Filename>TimeDomainPlot.py</Filename>
-      <Linenumber>395</Linenumber>
-    </Resource>
-  </Task>
-  <Task priority="1" completed="False" type="1" uid="{a30d4c30-b74e-4a50-87e7-08e4b494c719}">
-    <Summary>TODO: not implemented yet</Summary>
-    <Description></Description>
-    <Created>2018-09-28, 20:13:59</Created>
-    <Resource>
-      <Filename>TimeDomainPlot.py</Filename>
-      <Linenumber>405</Linenumber>
+      <Linenumber>443</Linenumber>
     </Resource>
   </Task>
 </Tasks>
