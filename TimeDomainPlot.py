@@ -79,10 +79,9 @@ class RealTimeThread(threading.Thread):
                 # One line data
                 for i in range(0, 32, 2):
                    newline =  newline + ("%04x" % int(struct.unpack('H',line[i:i+2])[0]))
-                   print (newline)
+                   #print (newline)
 
                 # Get CHA/CHB VALUE BY ABAB...
-                print (newline)
                 for i in range(0,  64,  8):
                     dataA1= newline[i:i+2]
                     dataA2= newline[i+2:i+4]
@@ -106,10 +105,10 @@ class RealTimeThread(threading.Thread):
 #                return self.data_ChB 
 
         def receiveData():
-            mainWindow.sendCmdWRREG(0x2, 0x28)
-            mainWindow.sendCmdWRREG(0x2, 0x29)
-            time.sleep(1)
-            mainWindow.sendCmdWRREG(0x2, 0x2b)
+#            mainWindow.sendCmdWRREG(0x2, 0x28)
+#            mainWindow.sendCmdWRREG(0x2, 0x29)
+#            time.sleep(1)
+#            mainWindow.sendCmdWRREG(0x2, 0x2b)
             mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
             mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
             return mainWindow.udpSocketClient.mData
@@ -117,6 +116,11 @@ class RealTimeThread(threading.Thread):
         def realtimecapture():
             print ("Real Time Capture.......")
             receiveTimes = self.recordLength / 8
+
+            mainWindow.sendCmdWRREG(0x2, 0x28)
+            mainWindow.sendCmdWRREG(0x2, 0x29)
+            time.sleep(1)
+            mainWindow.sendCmdWRREG(0x2, 0x2b)
 
             while not self.stopped:
                 if receiveTimes <= 1:
@@ -146,30 +150,28 @@ class RealTimeThread(threading.Thread):
                 mainWindow.lastChBData = self.data_ChB
                 
         def on_draw( axes, canvas, data):
-                self.sampleRate = mainWindow.getSampleRate()
-                #self.recordLength = mainWindow.getRecordLength()
-                self.volScale = mainWindow.getVoltageScale()
-                self.offset = mainWindow.getOffset()
-                
-                x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, self.recordLength*1024)  
-                #x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, 500)  
-                #x = np.linspace(-self.sampleRate/2, self.sampleRate/2, 1024) 
                 # clear the axes and redraw the plot anew
                 axes.clear() 
                 axes.set_title('Signal')
                 axes.set_xlabel('Freqs(Hz)')
                 axes.set_ylabel('dBm')
-
+                
+                self.sampleRate = mainWindow.getSampleRate()
+                #self.recordLength = mainWindow.getRecordLength()
+                self.volScale = mainWindow.getVoltageScale()
+                self.offset = mainWindow.getOffset()
+                x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, self.recordLength*1024)  
                 normalLimY = self.volScale * 10;
                 axes.set_ylim(-normalLimY/2 + self.offset, normalLimY/2 + self.offset )
                 ymajorLocator = MultipleLocator(self.volScale) 
                 yminorLocator = MultipleLocator(self.volScale/2) 
                 axes.yaxis.set_major_locator(ymajorLocator)
                 axes.yaxis.set_minor_locator(yminorLocator)
-                
                 axes.grid(True)
                 #axes.plot(x, data[:500])
-                print (data)
+                
+                print ("X Length: ",  self.recordLength*1024)
+                print ("Plot Data Length: ",  len(data))
                 axes.plot(x, data)
                 canvas.draw()
 
