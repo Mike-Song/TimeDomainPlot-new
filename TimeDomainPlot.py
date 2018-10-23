@@ -168,7 +168,6 @@ class RealTimeThread(threading.Thread):
                 axes.yaxis.set_major_locator(ymajorLocator)
                 axes.yaxis.set_minor_locator(yminorLocator)
                 axes.grid(True)
-                #axes.plot(x, data[:500])
                 
                 print ("X Length: ",  self.recordLength*1024)
                 print ("Plot Data Length: ",  len(data))
