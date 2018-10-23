@@ -153,13 +153,14 @@ class RealTimeThread(threading.Thread):
                 # clear the axes and redraw the plot anew
                 axes.clear() 
                 axes.set_title('Signal')
-                axes.set_xlabel('Freqs(Hz)')
+                axes.set_xlabel('Time(μs)')
                 axes.set_ylabel('dBm')
                 
                 self.sampleRate = mainWindow.getSampleRate()
                 #self.recordLength = mainWindow.getRecordLength()
                 self.volScale = mainWindow.getVoltageScale()
                 self.offset = mainWindow.getOffset()
+                timespan = self.recordLength*1024/self.sampleRate # in us
                 x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, self.recordLength*1024)  
                 normalLimY = self.volScale * 10;
                 axes.set_ylim(-normalLimY/2 + self.offset, normalLimY/2 + self.offset )
@@ -199,7 +200,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.canvas.setParent(self.signalframe)
         self.axes = self.figure.add_subplot(111)
         self.axes.set_title('Signal')
-        self.axes.set_xlabel('Freqs(Hz)')
+        self.axes.set_xlabel('Time(μs)')
         self.axes.set_ylabel('dBm')
         plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8, hspace=0.2, wspace=0.3)
         self.figure.tight_layout()# Adjust spaces
