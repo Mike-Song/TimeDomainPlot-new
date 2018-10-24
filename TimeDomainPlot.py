@@ -26,6 +26,7 @@ gSocketBufSize = gSocketBodySize + gSocketHeaderSize
 class UDPSocketClient:
     def __init__(self):
         self.mHost = '192.168.1.6'
+        #self.mHost = '127.0.0.1'
         self.mPort = 6000 
         self.mBufSize = gSocketBodySize + gSocketHeaderSize
         self.mAddress = (self.mHost, self.mPort)
@@ -67,9 +68,12 @@ class RealTimeThread(threading.Thread):
           return x
    
         def parseData(data, length,  withHead):
+            data_ChA =[]
+            data_ChB = []
             newdata = data
             if (withHead):
                newdata = data[16:]
+               #newdata = data # just for testing
             else:
                 newdata = data
                 
@@ -78,8 +82,8 @@ class RealTimeThread(threading.Thread):
                 newline = ''
                 # One line data
                 for i in range(0, 32, 2):
+                   #print (line[i:i+2])
                    newline =  newline + ("%04x" % int(struct.unpack('H',line[i:i+2])[0]))
-                   #print (newline)
 
                 # Get CHA/CHB VALUE BY ABAB...
                 for i in range(0,  64,  8):
@@ -87,17 +91,17 @@ class RealTimeThread(threading.Thread):
                     dataA2= newline[i+2:i+4]
                     dataA = dataA2 + dataA1
                     dataA = int (dataA,  16)
-                    self.data_ChA.append(bumatoyuanmaSingle(dataA))
+                    data_ChA.append(bumatoyuanmaSingle(dataA))
                     dataB1 = newline[i+4:i+6]
                     dataB2 = newline[i+6:i+8]
                     dataB = dataB2  + dataB1
                     dataB = int (dataB,  16)
-                    self.data_ChB.append(bumatoyuanmaSingle(dataB))
+                    data_ChB.append(bumatoyuanmaSingle(dataB))
 
-            print ("Channel A: Lenth:", len(self.data_ChA), self.data_ChA)
-            print ("Channel B: Lenth:", len(self.data_ChB), self.data_ChB)
+            #print ("Channel A: Length:", len(data_ChA))
+            #print ("Channel B: Length:", len(data_ChB))
             
-            return [self.data_ChA, self.data_ChB ]
+            return [data_ChA, data_ChB]
 
 #            if (mainWindow.radioButton_CHA.isChecked()):
 #                return self.data_ChA
@@ -115,7 +119,7 @@ class RealTimeThread(threading.Thread):
                     
         def realtimecapture():
             print ("Real Time Capture.......")
-            receiveTimes = self.recordLength / 8
+            receiveTimes = int (self.recordLength / 8)
 
             mainWindow.sendCmdWRREG(0x2, 0x28)
             mainWindow.sendCmdWRREG(0x2, 0x29)
@@ -123,16 +127,16 @@ class RealTimeThread(threading.Thread):
             mainWindow.sendCmdWRREG(0x2, 0x2b)
 
             while not self.stopped:
+                self.data_ChA = []
+                self.data_ChB = []
                 if receiveTimes <= 1:
                     data = receiveData()
-                    print ("Receive Total Length:",  len(data))
+                    #print ("Receive Total Length:",  len(data))
                     if data:
                         data = parseData(data, self.recordLength * 4 ,  True )
                         self.data_ChA = data[0]
                         self.data_ChB = data[1]
                 else:
-                    self.data_ChA = []
-                    self.data_ChB = []
                     for loop in range(0, receiveTimes):
                         data = receiveData()
                         if data:
@@ -152,16 +156,17 @@ class RealTimeThread(threading.Thread):
         def on_draw( axes, canvas, data):
                 # clear the axes and redraw the plot anew
                 axes.clear() 
-                axes.set_title('Signal')
+                #axes.set_title('Signal')
                 axes.set_xlabel('Time(μs)')
-                axes.set_ylabel('dBm')
+                axes.set_ylabel('Voltage')
                 
                 self.sampleRate = mainWindow.getSampleRate()
                 #self.recordLength = mainWindow.getRecordLength()
                 self.volScale = mainWindow.getVoltageScale()
                 self.offset = mainWindow.getOffset()
                 timespan = self.recordLength*1024/self.sampleRate # in us
-                x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, self.recordLength*1024)  
+                x = np.linspace(0, timespan, self.recordLength*1024)  
+                #x = np.linspace(-self.sampleRate*1e6/2, self.sampleRate*1e6/2, self.recordLength*1024)  
                 normalLimY = self.volScale * 10;
                 axes.set_ylim(-normalLimY/2 + self.offset, normalLimY/2 + self.offset )
                 ymajorLocator = MultipleLocator(self.volScale) 
@@ -170,8 +175,8 @@ class RealTimeThread(threading.Thread):
                 axes.yaxis.set_minor_locator(yminorLocator)
                 axes.grid(True)
                 
-                print ("X Length: ",  self.recordLength*1024)
-                print ("Plot Data Length: ",  len(data))
+                #print ("Plot X Length: ",  self.recordLength*1024)
+                #print ("Plot Data Length: ",  len(data))
                 axes.plot(x, data)
                 canvas.draw()
 
@@ -195,17 +200,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.dpi = 100
         self.signalframe = self.widget_Signal_TimeDomain
-        self.figure = Figure((10.5, 5.5), dpi=self.dpi)
+        self.figure = Figure((11.3, 6.3), dpi=self.dpi)
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setParent(self.signalframe)
         self.axes = self.figure.add_subplot(111)
-        self.axes.set_title('Signal')
+        #self.axes.set_title('Signal')
         self.axes.set_xlabel('Time(μs)')
-        self.axes.set_ylabel('dBm')
-        plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8, hspace=0.2, wspace=0.3)
+        self.axes.set_ylabel('Voltage')
+        #plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8, hspace=0.2, wspace=0.3)
+        
+        timespan = self.getRecordLength()*1024/self.getSampleRate() # in us
+        x = np.linspace(0, timespan, self.getRecordLength()*1024)  
+        normalLimY = self.getVoltageScale() * 10;
+        self.axes.set_ylim(-normalLimY/2 + self.getOffset(), normalLimY/2 + self.getOffset() )
+        ymajorLocator = MultipleLocator(self.getVoltageScale()) 
+        yminorLocator = MultipleLocator(self.getVoltageScale()/2) 
+        self.axes.yaxis.set_major_locator(ymajorLocator)
+        self.axes.yaxis.set_minor_locator(yminorLocator)
+        self.axes.grid(True)
+        
+        
         self.figure.tight_layout()# Adjust spaces
-        self.NavToolbar = NavigationToolbar(self.canvas, self.signalframe)
+        #self.NavToolbar = NavigationToolbar(self.canvas, self.signalframe)
         #self.addToolBar(QtCore.Qt.RightToolBarArea, NavigationToolbar(self.canvas, self.signalframe))
+        self.toolbar = NavigationToolbar(self.canvas, self.signalframe)
+        self.toolbar.hide()
+        
+        # Button slots
+        self.pushButton_Home.clicked.connect(self.home)
+        self.pushButton_Back.clicked.connect(self.back)
+        self.pushButton_Forward.clicked.connect(self.forward)
+        self.pushButton_Pan.clicked.connect(self.pan)
+        self.pushButton_Zoom.clicked.connect(self.zoom)
+        self.pushButton_SavePic.clicked.connect(self.savepic)
         
         # Init Socket
         self.udpSocketClient = UDPSocketClient()
@@ -218,11 +245,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         # Read sampleRate
         value = self.readCmdSampleRate()
+        if value > 5:
+            value = 0
         self.comboBox_SampleRate.setCurrentIndex(value)
         
         # The last data
         self.lastChAData = []
-        self.lastCHBData = []
+        self.lastChBData = []
+
+    def home(self):
+        self.toolbar.home()
+    def back(self):
+        self.toolbar.back()
+    def forward(self):
+        self.toolbar.forward ()
+    def zoom(self):
+        self.toolbar.zoom()
+    def pan(self):
+        self.toolbar.pan()
+    def savepic(self):
+        self.toolbar.save_figure()
 
     def sendcommand(self, cmdid, status, msgid, len, type, offset, apiversion, pad, CRC16,  cmdData):
           cmdid=struct.pack('H',htons(cmdid))
@@ -248,21 +290,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         value = value << 2
         regAddr= 0x2 # 0x2, Bit[2], 0: Auot, 1: External
         regValue=type
-        currentValue = readCmdTriggerType()
+        currentValue = self.readCmdTriggerType()
         currentValue = currentValue | value
         self.sendCmdWRREG(regAddr,  currentValue)
 
-    def receiveCmdTriggerType(self): 
-        global gSocketBodySize
-        gSocketBodySize = 8
-        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
-        mainWindow.udpSocketClient.receiveData() # Do nothing
-    
-    def readCmdTriggerType(self): 
+#    def receiveCmdTriggerType(self): 
 #        global gSocketBodySize
 #        gSocketBodySize = 8
 #        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
-        #cmdData  =  struct.pack('L', address) + struct.pack('L', 0x00)
+#        mainWindow.udpSocketClient.receiveData() # Do nothing
+    
+    def readCmdTriggerType(self): 
         self.sendCmdRDREG(0x02,  0x00)
         data = mainWindow.udpSocketClient.receiveData()
         data = data[16:]
@@ -284,11 +322,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Len is not cared
         self.sendcommand(0x5a0a,0x0000,0x5a0a,0x0004,0x0000,0x0000,0x00,0x00,0x0000, None )
         data = self.udpSocketClient.receiveData()
-#        newline = ''
-#        for i in range(0, 40, 2):
-#            newline =  newline + ("%04x" % int(struct.unpack('H',data[i:i+2])[0]))
         value = int(struct.unpack('L',data[16:20])[0])
-        #value = int(struct.unpack('L',data)[0])
         return value
         
     def sendCmdRecordLength(self,  length): 
@@ -335,11 +369,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.sendcommand(0x5a01,0x0000,0x5a01,0x0008,0x0000,0x0000,0x00,0x00,0x0000, cmdData)
     
     def getTriggerType(self):
-        index = mainWindow.comboBox_TriggerDomain.currentIndex()
+        index = self.comboBox_TriggerDomain.currentIndex()
         return int(index)
         
     def getSampleRate(self):
-        index = mainWindow.comboBox_SampleRate.currentText()
+        index = self.comboBox_SampleRate.currentText()
         return int(index)
         
     def getRecordLength(self):
@@ -376,6 +410,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_Start_TimeDomain.setEnabled(True)
         self.pushButton_Stop_TimeDomain.setEnabled(False)
         self.pushButton_Save_TimeDomain.setEnabled(True)
+        self.comboBox_RecordLength.setEnabled(True)
+        self.comboBox_SampleRate.setEnabled(True)
+        self.comboBox_TriggerDomain.setEnabled(True)
     
     @pyqtSlot()
     def on_pushButton_Start_TimeDomain_clicked(self):
@@ -385,6 +422,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_Start_TimeDomain.setEnabled(False)
         self.pushButton_Stop_TimeDomain.setEnabled(True)
         self.pushButton_Save_TimeDomain.setEnabled(False)
+        self.comboBox_RecordLength.setEnabled(False)
+        self.comboBox_SampleRate.setEnabled(False)
+        self.comboBox_TriggerDomain.setEnabled(False)
         self.realTimeThread = RealTimeThread(self.axes, self.canvas, self.radioButton_CHA.isChecked(), 1.0)
         self.realTimeThread.setDaemon(True)
         self.realTimeThread.start()
@@ -410,8 +450,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         File_CHA.close()
         File_CHB.close()
         
-        self.lastChAData = []
-        self.lastChBData = []
+#        self.lastChAData = []
+#        self.lastChBData = []
         
     @pyqtSlot(int)
     def on_comboBox_TriggerDomain_currentIndexChanged(self, index):
@@ -421,8 +461,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         @param index DESCRIPTION
         @type int
         """
-        # Read Current Address 0x02 value and set the bit 2 Value as changed
-        #mainWindow.sendCmdREW
+        self.sendCmdTriggerType(index)
+        
+        # if it is exteranl trigger, need to monitor
+        if value == 1:
+            # start to thread to monitor register value
+            # To be implemented
+            l = 1
         
     @pyqtSlot(int)
     def on_comboBox_SampleRate_currentIndexChanged(self, index):
@@ -432,7 +477,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         @param index DESCRIPTION
         @type int
         """
-        self.sendCmdSampleRate(index)
+        if index > -1:
+            self.sendCmdSampleRate(index)
         
     @pyqtSlot(int)
     def on_comboBox_RecordLength_currentIndexChanged(self, index):

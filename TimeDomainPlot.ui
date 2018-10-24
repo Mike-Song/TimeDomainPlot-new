@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>615</height>
+    <width>1300</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,14 +21,14 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1200</width>
-    <height>615</height>
+    <width>1300</width>
+    <height>720</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1200</width>
-    <height>615</height>
+    <width>1300</width>
+    <height>720</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -50,7 +50,7 @@
          <rect>
           <x>0</x>
           <y>10</y>
-          <width>121</width>
+          <width>131</width>
           <height>161</height>
          </rect>
         </property>
@@ -264,10 +264,10 @@
        <widget class="QWidget" name="widget_Signal_TimeDomain" native="true">
         <property name="geometry">
          <rect>
-          <x>129</x>
-          <y>10</y>
-          <width>1041</width>
-          <height>561</height>
+          <x>139</x>
+          <y>40</y>
+          <width>1120</width>
+          <height>620</height>
          </rect>
         </property>
         <property name="inputMethodHints">
@@ -281,8 +281,8 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>510</y>
-          <width>82</width>
+          <y>560</y>
+          <width>101</width>
           <height>23</height>
          </rect>
         </property>
@@ -309,8 +309,8 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>480</y>
-          <width>81</width>
+          <y>530</y>
+          <width>101</width>
           <height>23</height>
          </rect>
         </property>
@@ -335,7 +335,7 @@
          <rect>
           <x>0</x>
           <y>180</y>
-          <width>121</width>
+          <width>131</width>
           <height>141</height>
          </rect>
         </property>
@@ -368,7 +368,10 @@
           <string/>
          </property>
          <property name="text">
-          <string>200</string>
+          <string>3000</string>
+         </property>
+         <property name="echoMode">
+          <enum>QLineEdit::Normal</enum>
          </property>
          <property name="placeholderText">
           <string/>
@@ -438,7 +441,7 @@
          <rect>
           <x>0</x>
           <y>330</y>
-          <width>121</width>
+          <width>131</width>
           <height>91</height>
          </rect>
         </property>
@@ -504,8 +507,8 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>540</y>
-          <width>82</width>
+          <y>590</y>
+          <width>101</width>
           <height>23</height>
          </rect>
         </property>
@@ -529,7 +532,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>424</y>
+          <y>450</y>
           <width>101</width>
           <height>21</height>
          </rect>
@@ -545,7 +548,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>450</y>
+          <y>480</y>
           <width>101</width>
           <height>21</height>
          </rect>
@@ -554,6 +557,257 @@
          <string>Channel B</string>
         </property>
        </widget>
+       <widget class="QPushButton" name="pushButton_Home">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>490</x>
+          <y>10</y>
+          <width>50</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Rest original view</string>
+        </property>
+        <property name="text">
+         <string>Home</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_Back">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>550</x>
+          <y>10</y>
+          <width>50</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Back to previous view</string>
+        </property>
+        <property name="text">
+         <string>Back</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_Forward">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>610</x>
+          <y>10</y>
+          <width>50</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Forward to next view</string>
+        </property>
+        <property name="text">
+         <string>Forward</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_Pan">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>670</x>
+          <y>10</y>
+          <width>50</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Pan axes with left mouse, zoom with right</string>
+        </property>
+        <property name="text">
+         <string>Pan</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_Zoom">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>730</x>
+          <y>10</y>
+          <width>50</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Zoom with rectange</string>
+        </property>
+        <property name="text">
+         <string>Zoom</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_SavePic">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>790</x>
+          <y>10</y>
+          <width>50</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>23</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Save the  picutue</string>
+        </property>
+        <property name="text">
+         <string>Save Pic</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="groupBox_TimeDomain_4">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>430</y>
+          <width>131</width>
+          <height>81</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Channel Selection:</string>
+        </property>
+       </widget>
+       <zorder>groupBox_TimeDomain_4</zorder>
+       <zorder>groupBox_TimeDomain</zorder>
+       <zorder>widget_Signal_TimeDomain</zorder>
+       <zorder>pushButton_Stop_TimeDomain</zorder>
+       <zorder>pushButton_Start_TimeDomain</zorder>
+       <zorder>groupBox_TimeDomain_2</zorder>
+       <zorder>groupBox_TimeDomain_3</zorder>
+       <zorder>pushButton_Save_TimeDomain</zorder>
+       <zorder>radioButton_CHA</zorder>
+       <zorder>radioButton_CHB</zorder>
+       <zorder>pushButton_Home</zorder>
+       <zorder>pushButton_Back</zorder>
+       <zorder>pushButton_Forward</zorder>
+       <zorder>pushButton_Pan</zorder>
+       <zorder>pushButton_Zoom</zorder>
+       <zorder>pushButton_SavePic</zorder>
       </widget>
      </widget>
     </item>
