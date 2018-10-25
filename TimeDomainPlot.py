@@ -46,7 +46,7 @@ class UDPSocketClient:
        return self.mData
 
 class RealTimeThread(threading.Thread):  
-    def __init__(self, axes, canvas, cha,  timeout):  
+    def __init__(self, axes, canvas, cha,  timeout, stopforExternalTrigger):  
         super(RealTimeThread, self).__init__()  
         self.axes = axes
         self.canvas = canvas
@@ -56,6 +56,7 @@ class RealTimeThread(threading.Thread):
         self.data_ChA = []
         self.data_ChB = []
         self.stopped = False
+        self.stopforExternalTrigger = stopforExternalTrigger
         self.sampleRate = mainWindow.getSampleRate()
         self.recordLength = mainWindow.getRecordLength()
         self.volScale = mainWindow.getVoltageScale()
@@ -103,11 +104,6 @@ class RealTimeThread(threading.Thread):
             
             return [data_ChA, data_ChB]
 
-#            if (mainWindow.radioButton_CHA.isChecked()):
-#                return self.data_ChA
-#            else:
-#                return self.data_ChB 
-
         def receiveData():
 #            mainWindow.sendCmdWRREG(0x2, 0x28)
 #            mainWindow.sendCmdWRREG(0x2, 0x29)
@@ -118,7 +114,7 @@ class RealTimeThread(threading.Thread):
             return mainWindow.udpSocketClient.mData
                     
         def realtimecapture():
-            print ("Real Time Capture.......")
+            print ("Start Real Time Capture.......")
             receiveTimes = int (self.recordLength / 8)
 
             mainWindow.sendCmdWRREG(0x2, 0x28)
@@ -148,7 +144,10 @@ class RealTimeThread(threading.Thread):
                     on_draw(self.axes, self.canvas, self.data_ChA)
                 else: 
                     on_draw(self.axes, self.canvas, self.data_ChB)
-
+            
+                if self.stopforExternalTrigger == True:
+                    self.stop()
+                
             if self.stopped:
                 mainWindow.lastChAData = self.data_ChA 
                 mainWindow.lastChBData = self.data_ChB
@@ -187,11 +186,49 @@ class RealTimeThread(threading.Thread):
         subthread.start()  
         
     def stop(self): 
-        print ("Stop thread...")
+        print ("Stop Real Time Thread...")
         self.stopped = True  
 
     def isStopped(self):  
         return self.stopped  
+
+
+class ExternalTriggerThread(threading.Thread):  
+    def __init__(self):  
+        super(ExternalTriggerThread, self).__init__()  
+        self.stopped = False
+        self.recordLength = mainWindow.getRecordLength() 
+        self.internalRealTimeThread = None
+
+    def run(self):      
+        def triggerMonitor():
+            times = 0
+            print ("Start External Trigger Thread.......")
+            while not self.stopped:
+                # Read register....
+                currentDataLength = mainWindow.readExternalTriggerDataCount()
+                # Read Data
+                if (self.recordLength*1024 == currentDataLength and times == 0):
+                    # start RealTimeThread
+                    self.internalRealTimeThread = RealTimeThread(mainWindow.axes, mainWindow.canvas, mainWindow.radioButton_CHA.isChecked(), 1.0,  True)
+                    self.internalRealTimeThread.setDaemon(True)
+                    self.internalRealTimeThread.start()
+                    times = 1
+                
+                # Wait for 500ms
+                time.sleep(0.5)
+
+        subthread = threading.Thread(target=triggerMonitor)
+        subthread.setDaemon(True)  
+        subthread.start()  
+        
+    def stop(self): 
+        print ("Stop External Trigger Thread...")
+        self.stopped = True  
+
+    def isStopped(self):  
+        return self.stopped  
+
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -252,6 +289,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # The last data
         self.lastChAData = []
         self.lastChBData = []
+        
+        self.realTimeThread = None
+        self.externalTriggerThread = None
 
     def home(self):
         self.toolbar.home()
@@ -302,10 +342,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def readCmdTriggerType(self): 
         self.sendCmdRDREG(0x02,  0x00)
-        data = mainWindow.udpSocketClient.receiveData()
+        data = self.udpSocketClient.receiveData()
         data = data[16:]
         value = int(struct.unpack('L',data[20:])[0])
         return value
+        
+    def readExternalTriggerDataCount(self): 
+        self.sendCmdRDREG(0x10,  0x00)
+        data = self.udpSocketClient.receiveData()
+        data = data[20:]
+        lowValue = int(struct.unpack('L',data)[0])
+        self.sendCmdRDREG(0x12,  0x00)
+        data = self.udpSocketClient.receiveData()
+        data = data[20:]
+        highValue = int(struct.unpack('L',data)[0])
+        value = highValue << 16 | lowValue
+        return value
+        #return 1024
     
     def sendCmdSampleRate(self, value): 
         global gSocketBodySize
@@ -406,7 +459,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Slot documentation goes here.
         """
-        self.realTimeThread.stop()
+        if self.realTimeThread != None:
+            self.realTimeThread.stop()
+        if self.externalTriggerThread != None:
+            self.externalTriggerThread.stop()
+            
         self.pushButton_Start_TimeDomain.setEnabled(True)
         self.pushButton_Stop_TimeDomain.setEnabled(False)
         self.pushButton_Save_TimeDomain.setEnabled(True)
@@ -425,9 +482,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_RecordLength.setEnabled(False)
         self.comboBox_SampleRate.setEnabled(False)
         self.comboBox_TriggerDomain.setEnabled(False)
-        self.realTimeThread = RealTimeThread(self.axes, self.canvas, self.radioButton_CHA.isChecked(), 1.0)
-        self.realTimeThread.setDaemon(True)
-        self.realTimeThread.start()
+        if self.getTriggerType() == 0: # Auto Trigger Type
+            self.realTimeThread = RealTimeThread(self.axes, self.canvas, self.radioButton_CHA.isChecked(), 1.0,  False)
+            self.realTimeThread.setDaemon(True)
+            self.realTimeThread.start()
+        elif self.getTriggerType() == 1: # External Trigger Type
+                # start to thread to monitor register value
+                # To be implemented
+                self.externalTriggerThread = ExternalTriggerThread()
+                self.externalTriggerThread.setDaemon(True)
+                self.externalTriggerThread.start()  
     
     @pyqtSlot()
     def on_pushButton_Save_TimeDomain_clicked(self):
@@ -450,8 +514,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         File_CHA.close()
         File_CHB.close()
         
-#        self.lastChAData = []
-#        self.lastChBData = []
+        # Do not clear it
+        #self.lastChAData = []
+        #self.lastChBData = []
         
     @pyqtSlot(int)
     def on_comboBox_TriggerDomain_currentIndexChanged(self, index):
@@ -462,12 +527,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         @type int
         """
         self.sendCmdTriggerType(index)
-        
-        # if it is exteranl trigger, need to monitor
-        if value == 1:
-            # start to thread to monitor register value
-            # To be implemented
-            l = 1
         
     @pyqtSlot(int)
     def on_comboBox_SampleRate_currentIndexChanged(self, index):
