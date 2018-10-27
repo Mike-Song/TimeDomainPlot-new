@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Tasks SYSTEM "Tasks-6.0.dtd">
 <!-- eric6 tasks file for project TimeDomainPlot -->
-<!-- Saved: 2018-10-25, 23:32:21 -->
+<!-- Saved: 2018-10-27, 15:55:20 -->
 <Tasks version="6.0">
   <ProjectScanFilter></ProjectScanFilter>
-  <Task priority="1" completed="False" type="1" uid="{add3ee9a-88f7-416f-965b-fb21b662a3de}">
-    <Summary>TODO: not implemented yet</Summary>
-    <Description></Description>
-    <Created>2018-10-25, 23:32:18</Created>
-    <Resource>
-      <Filename>TimeDomainPlot.py</Filename>
-      <Linenumber>550</Linenumber>
-    </Resource>
-  </Task>
 </Tasks>
