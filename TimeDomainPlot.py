@@ -113,9 +113,19 @@ class RealTimeThread(threading.Thread):
 #            mainWindow.sendCmdWRREG(0x2, 0x29)
 #            time.sleep(1)
 #            mainWindow.sendCmdWRREG(0x2, 0x2b)
-            mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
-            mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
-            return mainWindow.udpSocketClient.mData
+            
+            # Check the read data length is ready or not
+            currentDataLength = mainWindow.readExternalTriggerDataCount()
+            print ("Current Data Length:",  currentDataLength)
+            
+            # Read Data
+            # FrameNum*RecordLength*1024
+            if (mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber() <= currentDataLength):
+                mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
+                mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
+                return mainWindow.udpSocketClient.mData
+            else:
+                return None
                     
         def realtimecapture():
             print ("Start Real Time Capture.......")
@@ -354,6 +364,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         self.frameNum = self.getFrameNumber()
         
+        self.sendCmdFramNum(self.frameNum);
+        
         # The last data
         self.lastChAData = []
         self.lastChBData = []
@@ -394,12 +406,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
           self.udpSocketClient.sendData()
        
     def sendCmdTriggerType(self,  value): 
-        value = value << 2
-        regAddr= 0x2 # 0x2, Bit[2], 0: Auot, 1: External
-        regValue=value
+        regAddr= 0x2 # 0x2, Bit[2], 0: Auto, 1: External
         currentValue = self.readCmdTriggerType()
-        
-        currentValue = currentValue | value
+        if value == 0: # Auto Trigger
+            mask = 0b1111111111111011
+            currentValue = currentValue & mask
+        elif value == 1: # External
+            mask = 0b100
+            currentValue = currentValue | mask
+            
         self.sendCmdWRREG(regAddr,  currentValue)
 
 #    def receiveCmdTriggerType(self): 
@@ -420,11 +435,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         data = self.udpSocketClient.receiveData()
         data = data[20:24]
         lowValue = ntohl(int(struct.unpack('L',data)[0]))
+        print ("0x10 Value:",  hex(lowValue))
         #print (hex(lowValue))
         self.sendCmdRDREG(0x12,  0x00)
         data = self.udpSocketClient.receiveData()
         data = data[20:24]
         highValue =ntohl(int(struct.unpack('L',data)[0]))
+        print ("0x12 Value:",  hex(highValue))
         #print (hex(highValue))
         value = highValue << 16 | lowValue
         return value
