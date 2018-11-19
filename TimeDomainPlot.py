@@ -210,9 +210,14 @@ class RealTimeThread(threading.Thread):
                     self.data_ChB = []
 
                     # Write register
-                    mainWindow.sendCmdWRREG(0x2, 0x28) # Reset
-                    mainWindow.sendCmdWRREG(0x2, 0x29) # Start to capture
-                    mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
+                    if (self.stopforExternalTrigger):
+                        mainWindow.sendCmdWRREG(0x2, 0xC) # Reset
+                        mainWindow.sendCmdWRREG(0x2, 0xD) # Start to capture
+                        mainWindow.sendCmdWRREG(0x2, 0xF) # Start to read
+                    else:
+                        mainWindow.sendCmdWRREG(0x2, 0x28) # Reset
+                        mainWindow.sendCmdWRREG(0x2, 0x29) # Start to capture
+                        mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
                     
                     # Check the read data length is ready or not
                     while (True):
@@ -289,9 +294,14 @@ class RealTimeThread(threading.Thread):
                 
                 while not self.stopped:
                      # Write register
-                    mainWindow.sendCmdWRREG(0x2, 0x28) # Reset
-                    mainWindow.sendCmdWRREG(0x2, 0x29) # Start to capture
-                    mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
+                    if (self.stopforExternalTrigger):
+                        mainWindow.sendCmdWRREG(0x2, 0xC) # Reset
+                        mainWindow.sendCmdWRREG(0x2, 0xD) # Start to capture
+                        mainWindow.sendCmdWRREG(0x2, 0xF) # Start to read
+                    else:
+                        mainWindow.sendCmdWRREG(0x2, 0x28) # Reset
+                        mainWindow.sendCmdWRREG(0x2, 0x29) # Start to capture
+                        mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
                     
 #                    for frameIndex in range(0,  frameNum):
 #                        self.data_ChA = []
