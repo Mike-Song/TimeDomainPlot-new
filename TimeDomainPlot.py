@@ -48,7 +48,7 @@ class UDPSocketClient:
        return self.mData
 
 class RealTimeThread(threading.Thread):  
-    def __init__(self, axes, canvas, cha,  timeout, stopforExternalTrigger):  
+    def __init__(self, axes, canvas, cha,  timeout, externalTrigger):  
         super(RealTimeThread, self).__init__()  
         self.axes = axes
         self.canvas = canvas
@@ -58,7 +58,7 @@ class RealTimeThread(threading.Thread):
         self.data_ChA = []
         self.data_ChB = []
         self.stopped = False
-        self.stopforExternalTrigger = stopforExternalTrigger
+        self.externalTrigger = externalTrigger
         self.sampleRate = mainWindow.getSampleRate()
         self.recordLength = mainWindow.getRecordLength()
         self.volScale = mainWindow.getVoltageScale()
@@ -111,11 +111,6 @@ class RealTimeThread(threading.Thread):
                     dataB = int(newline[i+6:i+8]  + newline[i+4:i+6], 16)
 #                    dataB = int (dataB,  16)
                     data_ChB.append(bumatoyuanmaSingle(dataB))
-
-#            print ("MaxDataA: ", maxDataA)
-#            print ("MinDataA:", minDataA)
-#            print ("MaxDataB: ", maxDataB)
-#            print ("MinDataB:", minDataB)
             
 #            tEnd1 = time.time()
 #            print ("tEnd1 - tStart1:",  tEnd1 - tStart1)
@@ -155,39 +150,7 @@ class RealTimeThread(threading.Thread):
                     pass
                     
 
-#        def receiveData():
-#            mainWindow.sendCmdWRREG(0x2, 0x28)
-#            mainWindow.sendCmdWRREG(0x2, 0x29)
-#            mainWindow.sendCmdWRREG(0x2, 0x2b)
-#            
-#            # Check the read data length is ready or not
-#            while (True):
-#                currentDataLength = mainWindow.readDataCount()
-#                print ("Current Data Length:",  currentDataLength)
-#            # Read Data
-#            # FrameNum*RecordLength*1024
-#                if (mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber() <= currentDataLength):
-#                    #mainWindow.sendCmdWRREG(0x2, 0x2b)
-#                    # CHeck the 0x2 is 6b or not
-#                    i = 0
-#                    while (i < 10):
-#                        mainWindow.sendCmdRDREG(0x2,  0x00)
-#                        data = mainWindow.udpSocketClient.receiveData()
-#                        data = data[20:24]
-#                        regValue =ntohl(int(struct.unpack('L',data)[0]))
-#                        #print (regValue)
-#                        if (hex(regValue) == hex(0x6b)):
-#                            mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
-#                            mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
-#                            return mainWindow.udpSocketClient.mData
-#                        else:
-#                            print("Read 0x2 to be 0x6B times: ",  i)
-#                            i += 1 
-#                            time.sleep(1)
-#                else:
-#                    pass
-#                    
-        
+    
         def realtimecapture():
             print ("Start Real Time Capture.......")
             
@@ -195,14 +158,7 @@ class RealTimeThread(threading.Thread):
             triggerType = mainWindow.getTriggerType()
             if (triggerType == 0): # Auto
                 frameMode = False
-# Replace it in the start command
-#            mainWindow.sendCmdWRREG(0x2, 0x28)
-#            mainWindow.sendCmdWRREG(0x2, 0x29)
-#            time.sleep(1)
-
-            # Start to read data
-#            mainWindow.sendCmdWRREG(0x2, 0x2b)
-
+                
             if (frameMode == False):
                 receiveTimes = int (self.recordLength*mainWindow.getFrameNumber() / 8)
                 while not self.stopped:
@@ -210,75 +166,62 @@ class RealTimeThread(threading.Thread):
                     self.data_ChB = []
 
                     # Write register
-                    if (self.stopforExternalTrigger):
-                        mainWindow.sendCmdWRREG(0x2, 0xC) # Reset
-                        mainWindow.sendCmdWRREG(0x2, 0xD) # Start to capture
-                        mainWindow.sendCmdWRREG(0x2, 0xF) # Start to read
+                    if (self.externalTrigger):
+                        mainWindow.sendCmdWRREG(0x2, 0x2c) # Reset
+                        mainWindow.sendCmdWRREG(0x2, 0x2d) # Start to capture
+                        #mainWindow.sendCmdWRREG(0x2, 0x2f) # Start to read
                     else:
                         mainWindow.sendCmdWRREG(0x2, 0x28) # Reset
                         mainWindow.sendCmdWRREG(0x2, 0x29) # Start to capture
-                        mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
+                        #mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
                     
                     # Check the read data length is ready or not
-                    while (True):
+                    while (not self.stopped):
                         currentDataLength = mainWindow.readDataCount()
                         print ("Current Data Length:",  currentDataLength)
                         # Read Data
                         # FrameNum*RecordLength*1024
                         expectLength = mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber()
                         if (expectLength <= currentDataLength):
-                            #mainWindow.sendCmdWRREG(0x2, 0x2b)
-                            # CHeck the 0x2 is 6b or not
-                            i = 0
-                            while (i < 10):
-                                mainWindow.sendCmdRDREG(0x2,  0x00)
-                                data = mainWindow.udpSocketClient.receiveData()
-                                data = data[20:24]
-                                regValue =ntohl(int(struct.unpack('L',data)[0]))
-                                #print (regValue)
-                                if (hex(regValue) == hex(0x6b)):
-                                    self.data_ChA = []
-                                    self.data_ChB = []
-                                    if receiveTimes <= 1:
-                                        mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
-                                        mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
-                                        data = mainWindow.udpSocketClient.mData
-                                        #print ("Receive Total Length:",  len(data))
-                                        if data:
-                                            data = parseData(data, self.recordLength * 4 ,  True )
-                                            self.data_ChA = data[0]
-                                            self.data_ChB = data[1]
-                                    else:
-                                        for loop in range(0, receiveTimes):
-                                            mainWindow.sendCmdRAW_AD_SAMPLE(32)
-                                            mainWindow.receiveCmdRAW_AD_SAMPLE(32)
-                                            data = mainWindow.udpSocketClient.mData
-                                            if data:
-                                                data = parseData(data, 32,  True )
-                                                self.data_ChA = self.data_ChA + data[0]
-                                                self.data_ChB = self.data_ChB + data[1]
-                                    #t1 = time.time()
-                                    if (mainWindow.radioButton_CHA.isChecked()): 
-                                        on_draw(self.axes, self.canvas, self.data_ChA)
-                                    else: 
-                                        on_draw(self.axes, self.canvas, self.data_ChB)
-                                    #t2 = time.time()
-                                    #print ("t2 - t1:",  t2 - t1)
-                                    # Draw finised, break
-                                    break
-                                    
-                                else:
-                                    print("Read 0x2 to be 0x6B times: ",  i)
-                                    i += 1 
-                                    time.sleep(0.1)
-                                    
-                            # Break this time read....
-                            break 
+                            if (self.externalTrigger):
+                                mainWindow.sendCmdWRREG(0x2, 0x2f) # Start to read
+                            else:
+                                mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
+                                
+                            self.data_ChA = []
+                            self.data_ChB = []
+                            if receiveTimes <= 1:
+                                mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
+                                mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
+                                data = mainWindow.udpSocketClient.mData
+                                #print ("Receive Total Length:",  len(data))
+                                if data:
+                                    data = parseData(data, self.recordLength * 4 ,  True )
+                                    self.data_ChA = data[0]
+                                    self.data_ChB = data[1]
+                            else:
+                                for loop in range(0, receiveTimes):
+                                    mainWindow.sendCmdRAW_AD_SAMPLE(32)
+                                    mainWindow.receiveCmdRAW_AD_SAMPLE(32)
+                                    data = mainWindow.udpSocketClient.mData
+                                    if data:
+                                        data = parseData(data, 32,  True )
+                                        self.data_ChA = self.data_ChA + data[0]
+                                        self.data_ChB = self.data_ChB + data[1]
+                            #t1 = time.time()
+                            if (mainWindow.radioButton_CHA.isChecked()): 
+                                on_draw(self.axes, self.canvas, self.data_ChA)
+                            else: 
+                                on_draw(self.axes, self.canvas, self.data_ChB)
+                            #t2 = time.time()
+                            #print ("t2 - t1:",  t2 - t1)
+                            # Draw finised, break
+                            break
                         else:
                             pass
           
-                    if self.stopforExternalTrigger == True:
-                        self.stop()
+#                    if self.externalTrigger == True:
+#                        self.stop()
 
                 if self.stopped:
                     mainWindow.lastChAData = []
@@ -294,43 +237,15 @@ class RealTimeThread(threading.Thread):
                 
                 while not self.stopped:
                      # Write register
-                    if (self.stopforExternalTrigger):
-                        mainWindow.sendCmdWRREG(0x2, 0xC) # Reset
-                        mainWindow.sendCmdWRREG(0x2, 0xD) # Start to capture
-                        mainWindow.sendCmdWRREG(0x2, 0xF) # Start to read
+                    if (self.externalTrigger):
+                        mainWindow.sendCmdWRREG(0x2, 0x2c) # Reset
+                        mainWindow.sendCmdWRREG(0x2, 0x2d) # Start to capture
+                        #mainWindow.sendCmdWRREG(0x2, 0x2f) # Start to read
                     else:
                         mainWindow.sendCmdWRREG(0x2, 0x28) # Reset
                         mainWindow.sendCmdWRREG(0x2, 0x29) # Start to capture
-                        mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
-                    
-#                    for frameIndex in range(0,  frameNum):
-#                        self.data_ChA = []
-#                        self.data_ChB = []
-#                        if receiveTimes <= 1:
-#                            data = receiveData()
-#                            #print ("Receive Total Length:",  len(data))
-#                            if data:
-#                                data = parseData(data, self.recordLength * 4 ,  True )
-#                                self.data_ChA = data[0]
-#                                self.data_ChB = data[1]
-#                                data_ChA_List.append(self.data_ChA)
-#                                data_ChB_List.append(self.data_ChB)
-#                        else:
-#                            for loop in range(0, receiveTimes):
-#                                data = receiveData()
-#                                if data:
-#                                    data = parseData(data, 32,  True )
-#                                    self.data_ChA = self.data_ChA + data[0]
-#                                    self.data_ChB = self.data_ChB + data[1]
-#                            
-#                            data_ChA_List.append(self.data_ChA)
-#                            data_ChB_List.append(self.data_ChB)
-#                            
-#                        if (mainWindow.radioButton_CHA.isChecked()): 
-#                            on_draw(self.axes, self.canvas, self.data_ChA)
-#                        else: 
-#                            on_draw(self.axes, self.canvas, self.data_ChB)
-#
+                        #mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
+ 
                     while (not self.stopped):
                         currentDataLength = mainWindow.readDataCount()
                         #print ("Current Data Length:",  currentDataLength)
@@ -338,69 +253,57 @@ class RealTimeThread(threading.Thread):
                         # FrameNum*RecordLength*1024
                         expectLength = mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber()
                         if (expectLength <= currentDataLength):
-                            #mainWindow.sendCmdWRREG(0x2, 0x2b)
-                            # CHeck the 0x2 is 6b or not
-                            i = 0
-                            while (i < 10):
-                                mainWindow.sendCmdRDREG(0x2,  0x00)
-                                data = mainWindow.udpSocketClient.receiveData()
-                                data = data[20:24]
-                                regValue =ntohl(int(struct.unpack('L',data)[0]))
-                                #print (regValue)
-                                if (hex(regValue) == hex(0x6b)):
+                            if (self.externalTrigger):
+                                mainWindow.sendCmdWRREG(0x2, 0x2f) # Start to read
+                            else:
+                                mainWindow.sendCmdWRREG(0x2, 0x2b) # Start to read
+
+                            self.data_ChA = []
+                            self.data_ChB = []
+                            data_ChA_List = []
+                            data_ChB_List = []
+                            for frameIndex in range(0,  frameNum):
+                                self.data_ChA = []
+                                self.data_ChB = []
+                                print ("Frame Number:",  frameIndex)
+                                if receiveTimes <= 1:
+                                  mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
+                                  mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
+                                  data = mainWindow.udpSocketClient.mData
+                                  #print ("Receive Total Length:",  len(data))
+                                  if data:
+                                       data = parseData(data, self.recordLength * 4 ,  True )
+                                       self.data_ChA = data[0]
+                                       self.data_ChB = data[1]
+                                       data_ChA_List.append(self.data_ChA)
+                                       data_ChB_List.append(self.data_ChB)
+                                else:
                                     self.data_ChA = []
                                     self.data_ChB = []
-                                    data_ChA_List = []
-                                    data_ChB_List = []
-                                    for frameIndex in range(0,  frameNum):
-                                        self.data_ChA = []
-                                        self.data_ChB = []
-                                        print ("Frame Number:",  frameIndex)
-                                        if receiveTimes <= 1:
-                                          mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
-                                          mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
-                                          data = mainWindow.udpSocketClient.mData
-                                          #print ("Receive Total Length:",  len(data))
-                                          if data:
-                                               data = parseData(data, self.recordLength * 4 ,  True )
-                                               self.data_ChA = data[0]
-                                               self.data_ChB = data[1]
-                                               data_ChA_List.append(self.data_ChA)
-                                               data_ChB_List.append(self.data_ChB)
-                                        else:
-                                            self.data_ChA = []
-                                            self.data_ChB = []
-                                            for loop in range(0, receiveTimes):
-                                                mainWindow.sendCmdRAW_AD_SAMPLE(32)
-                                                mainWindow.receiveCmdRAW_AD_SAMPLE(32)
-                                                data = mainWindow.udpSocketClient.mData
-                                                if data:
-                                                   data = parseData(data, 32,  True )
-                                                   self.data_ChA = self.data_ChA + data[0]
-                                                   self.data_ChB = self.data_ChB + data[1]
-                                            data_ChA_List.append(self.data_ChA)
-                                            data_ChB_List.append(self.data_ChB)
-                                        #t1 = time.time()
-                                        if (mainWindow.radioButton_CHA.isChecked()): 
-                                           on_draw(self.axes, self.canvas, self.data_ChA)
-                                        else: 
-                                           on_draw(self.axes, self.canvas, self.data_ChB)
-                                        #t2 = time.time()
-                                        #print ("t2 - t1:",  t2 - t1) 
-                                      # Draw finised, break
-                                    break
-                                else:
-                                    print("Read 0x2 to be 0x6b times: ",  i)
-                                    i += 1 
-                                    time.sleep(0.1)
-                                    
-                            # Break this time read....
-                            break 
+                                    for loop in range(0, receiveTimes):
+                                        mainWindow.sendCmdRAW_AD_SAMPLE(32)
+                                        mainWindow.receiveCmdRAW_AD_SAMPLE(32)
+                                        data = mainWindow.udpSocketClient.mData
+                                        if data:
+                                           data = parseData(data, 32,  True )
+                                           self.data_ChA = self.data_ChA + data[0]
+                                           self.data_ChB = self.data_ChB + data[1]
+                                    data_ChA_List.append(self.data_ChA)
+                                    data_ChB_List.append(self.data_ChB)
+                                #t1 = time.time()
+                                if (mainWindow.radioButton_CHA.isChecked()): 
+                                   on_draw(self.axes, self.canvas, self.data_ChA)
+                                else: 
+                                   on_draw(self.axes, self.canvas, self.data_ChB)
+                                #t2 = time.time()
+                                #print ("t2 - t1:",  t2 - t1) 
+                              # Draw finised, break
+                            break
                         else:
                             pass
           
-                    if self.stopforExternalTrigger == True:
-                        self.stop()
+#                    if self.externalTrigger == True:
+#                        self.stop()
   
                 if self.stopped:
                     mainWindow.lastChAData = data_ChA_List 
@@ -455,33 +358,28 @@ class ExternalTriggerThread(threading.Thread):
     def run(self):      
         def triggerMonitor():
             print ("Start External Trigger Thread.......")
-            while not self.stopped:
-                # Read register....
-#                mainWindow.sendCmdWRREG(0x2, 0x28)
-#                mainWindow.sendCmdWRREG(0x2, 0x29)
-                #mainWindow.sendCmdWRREG(0x2, 0x2b)
         
-                while (not self.stopped):
-                    currentDataLength = mainWindow.readDataCount()
-                    #print ("Current Data Length:",  currentDataLength)
-                    
-                    #currentDataLength = mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber()
-                    # Read Data
-                    # FrameNum*RecordLength*1024
-                    expectNum = mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber()
-                    if (expectNum <= currentDataLength):
-                        # start RealTimeThread
-                        self.internalRealTimeThread = RealTimeThread(mainWindow.axes, mainWindow.canvas, mainWindow.radioButton_CHA.isChecked(), 1.0,  True)
-                        self.internalRealTimeThread.setDaemon(True)
-                        self.internalRealTimeThread.start()
-                        #times = 1
-                        while (not self.internalRealTimeThread.isStopped()):
-                            time.sleep(0.1)
-                        # Break this time
-                        break;
-                    
-                    # Wait for 500ms
-                    time.sleep(0.1)
+            while (not self.stopped):
+                currentDataLength = mainWindow.readDataCount()
+                #print ("Current Data Length:",  currentDataLength)
+                
+                #currentDataLength = mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber()
+                # Read Data
+                # FrameNum*RecordLength*1024
+                expectNum = mainWindow.getRecordLength() *1024*mainWindow.getFrameNumber()
+                if (expectNum <= currentDataLength):
+                    # start RealTimeThread
+                    self.internalRealTimeThread = RealTimeThread(mainWindow.axes, mainWindow.canvas, mainWindow.radioButton_CHA.isChecked(), 1.0,  True)
+                    self.internalRealTimeThread.setDaemon(True)
+                    self.internalRealTimeThread.start()
+                    #times = 1
+                    while (not self.internalRealTimeThread.isStopped()):
+                        time.sleep(0.1)
+                    # Break this time
+                    break;
+                
+                # Wait for 500ms
+                time.sleep(0.1)
 
         subthread = threading.Thread(target=triggerMonitor)
         subthread.setDaemon(True)  
@@ -542,23 +440,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Init Socket
         self.udpSocketClient = UDPSocketClient()
         
-        # Init Length
-        self.comboBox_RecordLength.setCurrentIndex(6) # 64k
+        
         # Init FrameNum
         self.checkBox_FrameMode.setEnabled(True)
         self.frameNum = self.getFrameNumber()
+        # 0x4
         self.sendCmdFramNum(self.frameNum)
         
+        # Init Length 0x8
+        self.comboBox_RecordLength.setCurrentIndex(6) # 64k
         # Set RecordLength 
         self.sendCmdRecordLength(self.getRecordLength() * self.getFrameNumber())
         
-        #Init Trigger
+        #Init Trigger 0x2, bit2
         self.comboBox_TriggerDomain.setCurrentIndex(1) # External
         self.sendCmdTriggerType(self.getTriggerType())
         
         # Reset PFGA to read to capture data
-        self.sendCmdWRREG(0x2,  0x20)
-        self.sendCmdWRREG(0x2,  0x28)
+        if (self.getTriggerType() == 0):
+            self.sendCmdWRREG(0x2,  0x20)
+            self.sendCmdWRREG(0x2,  0x28)
+        else:
+            self.sendCmdWRREG(0xa,  0x0)
+            self.sendCmdWRREG(0x2,  0x2c)
+            self.sendCmdWRREG(0x2,  0x2d)
         
         # Read sampleRate
         value = self.readCmdSampleRate()
@@ -572,8 +477,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         self.realTimeThread = None
         self.externalTriggerThread = None
-        
-        
 
     def home(self):
         self.toolbar.home()
@@ -790,18 +693,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_RecordLength.setEnabled(False)
         self.comboBox_SampleRate.setEnabled(False)
         self.comboBox_TriggerDomain.setEnabled(False)
-        
-        # Start to capture...
-#        self.sendCmdWRREG(0x2, 0x28)
-#        self.sendCmdWRREG(0x2, 0x29)
-#        time.sleep(1)
-        
+                
         if self.getTriggerType() == 0: # Auto Trigger Type
             self.realTimeThread = RealTimeThread(self.axes, self.canvas, self.radioButton_CHA.isChecked(), 1.0,  False)
             self.realTimeThread.setDaemon(True)
             self.realTimeThread.start()
         elif self.getTriggerType() == 1: # External Trigger Type
-            self.externalTriggerThread = ExternalTriggerThread()
+            self.externalTriggerThread = RealTimeThread(self.axes, self.canvas, self.radioButton_CHA.isChecked(), 1.0,  True)
             self.externalTriggerThread.setDaemon(True)
             self.externalTriggerThread.start()  
     
@@ -816,32 +714,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if (len(self.lastChAData) == 1):
             FileName_CHA = "ChA-" + currentTime + ".txt"
             File_CHA=open(FileName_CHA,'w')
-            FileName_CHB = "ChB-" + currentTime + ".txt"
-            File_CHB=open(FileName_CHB,'w')
+#            FileName_CHB = "ChB-" + currentTime + ".txt"
+#            File_CHB=open(FileName_CHB,'w')
             
             for pos in range(0, len(self.lastChAData[0])):
                 File_CHA.write(str(self.lastChAData[0][pos]))
                 File_CHA.write('\n')
-                File_CHB.write(str(self.lastChBData[0][pos]))
-                File_CHB.write('\n')
+#                File_CHB.write(str(self.lastChBData[0][pos]))
+#                File_CHB.write('\n')
                 
             File_CHA.close()
-            File_CHB.close()
+#            File_CHB.close()
         else:
             for fileIndex in range(0,  len(self.lastChAData)):
                 FileName_CHA = "ChA-" + currentTime + "-" + str(fileIndex + 1) + ".txt"
                 File_CHA=open(FileName_CHA,'w')
-                FileName_CHB = "ChB-" + currentTime + "-" + str(fileIndex + 1) + ".txt"
-                File_CHB=open(FileName_CHB,'w')
+#                FileName_CHB = "ChB-" + currentTime + "-" + str(fileIndex + 1) + ".txt"
+#                File_CHB=open(FileName_CHB,'w')
                 
                 for pos in range(0, len(self.lastChAData[fileIndex])):
                     File_CHA.write(str(self.lastChAData[fileIndex][pos]))
                     File_CHA.write('\n')
-                    File_CHB.write(str(self.lastChBData[fileIndex][pos]))
-                    File_CHB.write('\n')
+#                    File_CHB.write(str(self.lastChBData[fileIndex][pos]))
+#                    File_CHB.write('\n')
                     
                 File_CHA.close()
-                File_CHB.close()
+#                File_CHB.close()
             
         
         # Do not clear it
