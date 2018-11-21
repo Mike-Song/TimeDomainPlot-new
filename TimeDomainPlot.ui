@@ -286,7 +286,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>560</y>
+          <y>610</y>
           <width>101</width>
           <height>23</height>
          </rect>
@@ -314,7 +314,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>530</y>
+          <y>580</y>
           <width>101</width>
           <height>23</height>
          </rect>
@@ -447,7 +447,7 @@
           <x>0</x>
           <y>330</y>
           <width>131</width>
-          <height>91</height>
+          <height>141</height>
          </rect>
         </property>
         <property name="title">
@@ -504,6 +504,35 @@
           <string>1000</string>
          </property>
         </widget>
+        <widget class="QLabel" name="label_FrameNum_Current">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>90</y>
+           <width>81</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Current Number:</string>
+         </property>
+        </widget>
+        <widget class="QLCDNumber" name="lcdNumber_FrameNum">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>110</y>
+           <width>51</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="value" stdset="0">
+          <double>0.000000000000000</double>
+         </property>
+        </widget>
        </widget>
        <widget class="QPushButton" name="pushButton_Save_TimeDomain">
         <property name="enabled">
@@ -512,7 +541,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>590</y>
+          <y>640</y>
           <width>101</width>
           <height>23</height>
          </rect>
@@ -537,7 +566,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>450</y>
+          <y>500</y>
           <width>101</width>
           <height>21</height>
          </rect>
@@ -553,7 +582,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>480</y>
+          <y>530</y>
           <width>101</width>
           <height>21</height>
          </rect>
@@ -788,7 +817,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>430</y>
+          <y>480</y>
           <width>131</width>
           <height>81</height>
          </rect>
