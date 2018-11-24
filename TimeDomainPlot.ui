@@ -58,6 +58,9 @@
          <string> Horizontal Setting</string>
         </property>
         <widget class="QComboBox" name="comboBox_TriggerDomain">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>10</x>
@@ -130,6 +133,9 @@
          </property>
         </widget>
         <widget class="QComboBox" name="comboBox_SampleRate">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>10</x>

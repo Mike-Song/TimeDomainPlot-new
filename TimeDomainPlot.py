@@ -19,8 +19,6 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from Ui_TimeDomainPlot import Ui_MainWindow
 
-
-
 gSocketHeaderSize = 16
 gSocketBodySize = 32 * 1024
 gSocketBufSize = gSocketBodySize + gSocketHeaderSize
@@ -28,7 +26,7 @@ gSocketBufSize = gSocketBodySize + gSocketHeaderSize
 class UDPSocketClient:
     def __init__(self):
         self.mHost = '192.168.1.6'
-        self.mHost = '127.0.0.1'
+        #self.mHost = '127.0.0.1'
         self.mPort = 6000 
         self.mBufSize = gSocketBodySize + gSocketHeaderSize
         self.mAddress = (self.mHost, self.mPort)
@@ -118,7 +116,10 @@ class RealTimeThread(threading.Thread):
             return [data_ChA, data_ChB]
 
         def realtimecapture():
-            print ("Start Real Time Capture.......")
+            if (self.externalTrigger == True):
+                print ("Start External Trigger Thread.......")
+            else:
+                print ("Start Auto Trigger Thread.......")
             
             frameMode = mainWindow.checkBox_FrameMode.isChecked() 
             triggerType = mainWindow.getTriggerType()
@@ -230,12 +231,13 @@ class RealTimeThread(threading.Thread):
                             self.data_ChB = []
                             data_ChA_List = []
                             data_ChB_List = []
-                            for frameIndex in range(0,  frameNum):
+                            #t1 = time.time()
+                            for frameIndex in range(1,  frameNum + 1):
                                 if (not self.stopped):
                                     self.data_ChA = []
                                     self.data_ChB = []
-                                    mainWindow.lcdNumber_FrameNum.display(frameIndex + 1)
-                                    print ("Frame Number:",  frameIndex)
+                                    mainWindow.lcdNumber_FrameNum.display(frameIndex)
+                                    #print ("Frame Number:",  frameIndex)
                                     if receiveTimes <= 1:
                                       mainWindow.sendCmdRAW_AD_SAMPLE(self.recordLength * 4)
                                       mainWindow.receiveCmdRAW_AD_SAMPLE(self.recordLength * 4)
@@ -263,7 +265,7 @@ class RealTimeThread(threading.Thread):
                                     #t1 = time.time()
                                     # Only do for the last frameIndex
                                     if frameNum > 5:
-                                        if frameIndex == 0 or frameIndex == frameNum -1:
+                                        if frameIndex == 1 or frameIndex == frameNum:
                                             if (mainWindow.radioButton_CHA.isChecked()): 
                                                on_draw(self.axes, self.canvas, self.data_ChA)
                                             else: 
@@ -275,19 +277,23 @@ class RealTimeThread(threading.Thread):
                                            on_draw(self.axes, self.canvas, self.data_ChB)
                                 #t2 = time.time()
                                 #print ("t2 - t1:",  t2 - t1) 
-                              # Draw finised, break
+                            #t2 = time.time()
+                            #print ("t2 - t1:",  t2 - t1)     
+                            # Draw finised, break
                             break
                         else:
-                            pass
+                            time.sleep(0.1) # Sleep for a while to wait the expectLength
           
                     if self.externalTrigger == True:
                         self.stop()
                         mainWindow.on_pushButton_Stop_TimeDomain_clicked()
-                        
   
                 if self.stopped:
                     mainWindow.lastChAData = data_ChA_List 
-                    mainWindow.lastChBData = data_ChB_List  
+                    mainWindow.lastChBData = data_ChB_List 
+                    # Save them automatically if all the data is caputred
+                    if (mainWindow.lcdNumber_FrameNum.intValue() == mainWindow.getFrameNumber()):
+                        mainWindow.on_pushButton_Save_TimeDomain_clicked() 
   
         def on_draw( axes, canvas, data):
                 # clear the axes and redraw the plot anew
@@ -310,6 +316,12 @@ class RealTimeThread(threading.Thread):
                 axes.yaxis.set_major_locator(ymajorLocator)
                 axes.yaxis.set_minor_locator(yminorLocator)
                 axes.grid(True)
+                
+#                # Init 0 for draw...
+#                plt.rcParams['agg.path.chunksize'] = 0
+#                matplotlib.rcParams['agg.path.chunksize'] = 0
+#                matplotlib.rcParams.update( matplotlib.rc_params() )
+                
                 axes.plot(self.x, data)
                 canvas.draw()
 
@@ -322,7 +334,11 @@ class RealTimeThread(threading.Thread):
         subthread.start()  
         
     def stop(self): 
-        print ("Stop Real Time Thread...")
+        if (self.externalTrigger == True):
+            print ("Stop External Trigger Thread.......")
+        else:
+            print ("Stop Auto Trigger Thread.......")
+            
         self.stopped = True  
 
     def isStopped(self):  
@@ -380,6 +396,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Init 0 for draw...
         plt.rcParams['agg.path.chunksize'] = 0
         matplotlib.rcParams['agg.path.chunksize'] = 0
+        matplotlib.rcParams.update( matplotlib.rc_params() )
         
         self.dpi = 100
         self.signalframe = self.widget_Signal_TimeDomain
@@ -500,18 +517,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             currentValue = currentValue | mask
             
         self.sendCmdWRREG(regAddr,  currentValue)
-
-#    def receiveCmdTriggerType(self): 
-#        global gSocketBodySize
-#        gSocketBodySize = 8
-#        self.udpSocketClient.setBufSize(gSocketBodySize + gSocketHeaderSize)
-#        mainWindow.udpSocketClient.receiveData() # Do nothing
     
     def readCmdTriggerType(self): 
         print ("readCmdTriggerType ")
         self.sendCmdRDREG(0x02,  0x00)
         data = self.udpSocketClient.receiveData()
-        value = int(struct.unpack('L',data[20:24])[0])
+        value = ntohl(int(struct.unpack('L',data[20:24])[0]))
         return value
         
     def readDataCount(self): 
@@ -529,6 +540,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return value
         #return 1024
     
+    
     def sendCmdSampleRate(self, value): 
         global gSocketBodySize
         gSocketBodySize = 4
@@ -544,7 +556,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Len is not cared
         self.sendcommand(0x5a0a,0x0000,0x5a0a,0x0004,0x0000,0x0000,0x00,0x00,0x0000, None )
         data = self.udpSocketClient.receiveData()
-        value = int(struct.unpack('L',data[16:20])[0])
+        value = ntohl(int(struct.unpack('L',data[16:20])[0]))
         return value
         
     def sendCmdRecordLength(self,  length): 
@@ -661,20 +673,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_Stop_TimeDomain.setEnabled(False)
         self.pushButton_Save_TimeDomain.setEnabled(True)
         self.comboBox_RecordLength.setEnabled(True)
-        self.comboBox_SampleRate.setEnabled(True)
-        self.comboBox_TriggerDomain.setEnabled(True)
+        
+        # Disable them for zhengzhou
+        self.comboBox_SampleRate.setEnabled(False)
+        self.comboBox_TriggerDomain.setEnabled(False)
+        
+        self.lineEdit_FrameNum.setEnabled(True)
     
     @pyqtSlot()
     def on_pushButton_Start_TimeDomain_clicked(self):
         """
         Slot documentation goes here.
         """
+        # Restart LCD display
+        self.lcdNumber_FrameNum.display(0)
         self.pushButton_Start_TimeDomain.setEnabled(False)
         self.pushButton_Stop_TimeDomain.setEnabled(True)
         self.pushButton_Save_TimeDomain.setEnabled(False)
         self.comboBox_RecordLength.setEnabled(False)
         self.comboBox_SampleRate.setEnabled(False)
         self.comboBox_TriggerDomain.setEnabled(False)
+        self.lineEdit_FrameNum.setEnabled(False)
                 
         if self.getTriggerType() == 0: # Auto Trigger Type
             self.realTimeThread = RealTimeThread(self.axes, self.canvas, self.radioButton_CHA.isChecked(), 1.0,  False)
@@ -765,6 +784,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_lineEdit_FrameNum_editingFinished(self):
         self.frameNum = int(self.lineEdit_FrameNum.text())
+        self.sendCmdFramNum(self.frameNum);
+        self.sendCmdRecordLength(self.getRecordLength()*self.frameNum)
+        
+    @pyqtSlot(bool)
+    def on_checkBox_FrameMode_clicked(self, checked):
+        """
+        Slot documentation goes here.
+        
+        @param checked DESCRIPTION
+        @type bool
+        """
+        # Set recordLength value to register
+        self.frameNum = self.getFrameNumber()
         self.sendCmdFramNum(self.frameNum);
         self.sendCmdRecordLength(self.getRecordLength()*self.frameNum)
 
