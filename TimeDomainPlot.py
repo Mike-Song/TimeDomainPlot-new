@@ -202,6 +202,7 @@ class RealTimeThread(threading.Thread):
                     mainWindow.lastChBData = []
                     mainWindow.lastChBData.append(self.data_ChB)
                     
+                    # Save the last data
                     mainWindow.on_pushButton_Save_TimeDomain_clicked() 
                     
             elif (frameMode == True):
