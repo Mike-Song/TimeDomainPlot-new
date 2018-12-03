@@ -145,6 +145,10 @@ class RealTimeThread(threading.Thread):
                     
                     # Check the read data length is ready or not
                     while (not self.stopped):
+                        
+                        # Capture only 1 time to test
+                        #self.stop()
+                        
                         currentDataLength = mainWindow.readDataCount()
                         print ("Current Data Length:",  currentDataLength)
                         # Read Data
@@ -197,6 +201,8 @@ class RealTimeThread(threading.Thread):
                     mainWindow.lastChAData.append(self.data_ChA )
                     mainWindow.lastChBData = []
                     mainWindow.lastChBData.append(self.data_ChB)
+                    
+                    mainWindow.on_pushButton_Save_TimeDomain_clicked() 
                     
             elif (frameMode == True):
                 receiveTimes = int (self.recordLength / 8)
@@ -541,6 +547,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #return 1024
     
     
+    
     def sendCmdSampleRate(self, value): 
         global gSocketBodySize
         gSocketBodySize = 4
@@ -675,8 +682,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_RecordLength.setEnabled(True)
         
         # Disable them for zhengzhou
-        self.comboBox_SampleRate.setEnabled(False)
-        self.comboBox_TriggerDomain.setEnabled(False)
+        self.comboBox_SampleRate.setEnabled(True)
+        self.comboBox_TriggerDomain.setEnabled(True)
         
         self.lineEdit_FrameNum.setEnabled(True)
     
@@ -715,32 +722,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if (len(self.lastChAData) == 1):
             FileName_CHA = "ChA-" + currentTime + ".txt"
             File_CHA=open(FileName_CHA,'w')
-#            FileName_CHB = "ChB-" + currentTime + ".txt"
-#            File_CHB=open(FileName_CHB,'w')
+            FileName_CHB = "ChB-" + currentTime + ".txt"
+            File_CHB=open(FileName_CHB,'w')
             
             for pos in range(0, len(self.lastChAData[0])):
                 File_CHA.write(str(self.lastChAData[0][pos]))
                 File_CHA.write('\n')
-#                File_CHB.write(str(self.lastChBData[0][pos]))
-#                File_CHB.write('\n')
+                File_CHB.write(str(self.lastChBData[0][pos]))
+                File_CHB.write('\n')
                 
             File_CHA.close()
-#            File_CHB.close()
+            File_CHB.close()
         else:
             for fileIndex in range(0,  len(self.lastChAData)):
                 FileName_CHA = "ChA-" + currentTime + "-" + str(fileIndex + 1) + ".txt"
                 File_CHA=open(FileName_CHA,'w')
-#                FileName_CHB = "ChB-" + currentTime + "-" + str(fileIndex + 1) + ".txt"
-#                File_CHB=open(FileName_CHB,'w')
+                FileName_CHB = "ChB-" + currentTime + "-" + str(fileIndex + 1) + ".txt"
+                File_CHB=open(FileName_CHB,'w')
                 
                 for pos in range(0, len(self.lastChAData[fileIndex])):
                     File_CHA.write(str(self.lastChAData[fileIndex][pos]))
                     File_CHA.write('\n')
-#                    File_CHB.write(str(self.lastChBData[fileIndex][pos]))
-#                    File_CHB.write('\n')
+                    File_CHB.write(str(self.lastChBData[fileIndex][pos]))
+                    File_CHB.write('\n')
                     
                 File_CHA.close()
-#                File_CHB.close()
+                File_CHB.close()
             
         
         # Do not clear it
