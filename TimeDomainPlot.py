@@ -128,11 +128,10 @@ class RealTimeThread(threading.Thread):
                 
             mainWindow.lcdNumber_FrameNum.display(1)
             if (frameMode == False):
+                self.data_ChA = []
+                self.data_ChB = []
                 receiveTimes = int (self.recordLength*mainWindow.getFrameNumber() / 8)
                 while not self.stopped:
-                    self.data_ChA = []
-                    self.data_ChB = []
-
                     # Write register
                     if (self.externalTrigger):
                         mainWindow.sendCmdWRREG(0x2, 0x2c) # Reset
